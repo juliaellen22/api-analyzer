@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="pt-BR">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Senac - Análise de Equivalência Curricular (JS)</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+    </head>
+
+    <body
+        class="bg-gray-100 min-h-screen flex items-center justify-center font-sans"
+    >
+        <div
+            class="w-full max-w-3xl bg-white rounded-xl shadow-2xl overflow-hidden my-8"
+        >
+            <header
+                class="bg-gradient-to-r from-blue-800 to-blue-600 p-6 text-center"
+            >
+                <img
+                    src="https://www.senac.br/images/senac_logo_branco.png"
+                    alt="Senac Logo"
+                    class="h-12 mx-auto mb-4"
+                />
+                <h1 class="text-3xl font-bold text-white">
+                    Análise de Equivalência Curricular
+                </h1>
+                <p class="text-blue-100 mt-2">
+                    Versão Segura com Backend Express
+                </p>
+            </header>
+
+            <main class="p-8 space-y-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- Card de Upload do Aluno -->
+                    <div class="flex flex-col">
+                        <label
+                            for="pdf_aluno"
+                            class="mb-2 font-semibold text-gray-700"
+                            >1. Grade Curricular do Aluno</label
+                        >
+                        <input
+                            type="file"
+                            id="pdf_aluno"
+                            accept=".pdf"
+                            class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                        />
+                    </div>
+
+                    <!-- Card de Upload Opcionais/Base -->
+                    <div class="flex flex-col">
+                        <label
+                            for="pdf_opcionais"
+                            class="mb-2 font-semibold text-gray-700"
+                            >2. Grade Curricular Base</label
+                        >
+                        <input
+                            type="file"
+                            id="pdf_opcionais"
+                            accept=".pdf"
+                            class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"
+                        />
+                    </div>
+                </div>
+
+                <div class="text-center">
+                    <button
+                        id="analyze-button"
+                        class="bg-blue-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-transform transform hover:scale-105 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:scale-100"
+                    >
+                        Analisar Equivalência
+                    </button>
+                </div>
+
+                <!-- Seção de Resultados -->
+                <div
+                    id="results-container"
+                    class="pt-6 border-t border-gray-200"
+                >
+                    <h2 class="text-xl font-bold text-gray-800 mb-4">
+                        Resultado da Análise
+                    </h2>
+                    <div
+                        id="loading-spinner"
+                        class="hidden flex items-center justify-center space-x-2 text-gray-600"
+                    >
+                        <svg
+                            class="animate-spin h-5 w-5 text-blue-600"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                        >
+                            <circle
+                                class="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                stroke-width="4"
+                            ></circle>
+                            <path
+                                class="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
+                        </svg>
+                        <span
+                            >Analisando documentos com a IA... Por favor,
+                            aguarde.</span
+                        >
+                    </div>
+                    <div
+                        id="analysis-result"
+                        class="prose max-w-none p-4 bg-gray-50 rounded-lg text-gray-700"
+                    >
+                        <p>Os resultados da análise aparecerão aqui.</p>
+                    </div>
+                    <div
+                        id="error-message"
+                        class="hidden mt-4 p-4 bg-red-100 text-red-800 border border-red-300 rounded-lg"
+                    ></div>
+                </div>
+            </main>
+        </div>
+
+        <!-- JavaScript para chamar o backend -->
+        <script>
+            // --- ELEMENTOS DO DOM ---
+            const analyzeButton = document.getElementById("analyze-button");
+            const pdfAlunoInput = document.getElementById("pdf_aluno");
+            const pdfOpcionaisInput = document.getElementById("pdf_opcionais");
+            const resultDiv = document.getElementById("analysis-result");
+            const loadingSpinner = document.getElementById("loading-spinner");
+            const errorMessageDiv = document.getElementById("error-message");
+
+            // --- CONFIGURAÇÃO ---
+            const BACKEND_URL = "http://localhost:3333/api/analyze";
+
+            function showLoading(isLoading) {
+                if (isLoading) {
+                    loadingSpinner.classList.remove("hidden");
+                    resultDiv.classList.add("hidden");
+                    errorMessageDiv.classList.add("hidden");
+                    analyzeButton.disabled = true;
+                    analyzeButton.textContent = "Analisando...";
+                } else {
+                    loadingSpinner.classList.add("hidden");
+                    resultDiv.classList.remove("hidden");
+                    analyzeButton.disabled = false;
+                    analyzeButton.textContent = "Analisar Equivalência";
+                }
+            }
+
+            function showError(message) {
+                errorMessageDiv.textContent = message;
+                errorMessageDiv.classList.remove("hidden");
+                resultDiv.classList.add("hidden");
+            }
+
+            // --- LÓGICA PRINCIPAL ---
+            analyzeButton.addEventListener("click", async () => {
+                const fileAluno = pdfAlunoInput.files[0];
+                const fileOpcionais = pdfOpcionaisInput.files[0];
+
+                if (!fileAluno || !fileOpcionais) {
+                    showError(
+                        "Por favor, selecione ambos os arquivos PDF para continuar.",
+                    );
+                    return;
+                }
+
+                showLoading(true);
+
+                // Monta os dados do formulário para enviar os arquivos
+                const formData = new FormData();
+                formData.append("pdf_aluno", fileAluno);
+                formData.append("pdf_opcionais", fileOpcionais);
+
+                try {
+                    // Faz a chamada para o NOSSO backend
+                    const response = await fetch(BACKEND_URL, {
+                        method: "POST",
+                        body: formData, // Não precisa de 'Content-Type', o browser define automaticamente com 'boundary'
+                    });
+
+                    const result = await response.json();
+
+                    if (!response.ok) {
+                        // Se o servidor retornou um erro (status 4xx ou 5xx)
+                        throw new Error(
+                            result.error || "Ocorreu um erro desconhecido.",
+                        );
+                    }
+
+                    // Exibe o resultado que veio do backend
+                    let htmlResult = result.analysis_result
+                        .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+                        .replace(/^- (.*)/gm, "<li>$1</li>");
+
+                    resultDiv.innerHTML = `<p>${htmlResult.replace(/\n/g, "<br>")}</p>`;
+                } catch (error) {
+                    console.error("Erro ao chamar o backend:", error);
+                    showError(
+                        `Falha na comunicação com o servidor: ${error.message}`,
+                    );
+                } finally {
+                    showLoading(false);
+                }
+            });
+        </script>
+    </body>
+</html>
