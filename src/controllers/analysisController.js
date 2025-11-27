@@ -2,7 +2,7 @@ import prisma from "../prisma.js";
 import { analyzeWithLLM } from "../services/analysisService.js";
 import { extractTextFromPdf } from "../services/pdfService.js";
 import { formatReportForFrontend } from "../services/reportFormatter.js";
-
+import jwt from "jsonwebtoken";
 /**
  * Handler para análise de currículos.
  */
@@ -11,9 +11,9 @@ async function analyzeHandler(req, res) {
 
   // Validação dos arquivos obrigatórios
   if (!req.files || !req.files.pdf_aluno || !req.files.pdf_opcionais) {
-    return res
-      .status(400)
-      .json({ error: "Ambos os arquivos PDF (aluno e opcionais) são necessários." });
+    return res.status(400).json({
+      error: "Ambos os arquivos PDF (aluno e opcionais) são necessários.",
+    });
   }
 
   // Validação dos dados do formulário
@@ -21,7 +21,8 @@ async function analyzeHandler(req, res) {
 
   if (!studentName || !registration || !currentCourse || !targetCourse) {
     return res.status(400).json({
-      error: "Todos os campos do formulário são obrigatórios: nome do aluno, matrícula, curso atual e curso destino.",
+      error:
+        "Todos os campos do formulário são obrigatórios: nome do aluno, matrícula, curso atual e curso destino.",
     });
   }
 
@@ -43,10 +44,15 @@ async function analyzeHandler(req, res) {
       extractionPromises.push(Promise.resolve(""));
     }
 
-    const [textAluno, textOpcionais, textCertificacoes] = await Promise.all(extractionPromises);
+    const [textAluno, textOpcionais, textCertificacoes] =
+      await Promise.all(extractionPromises);
 
     // Chamada para a IA
-    const analysisResult = await analyzeWithLLM(textAluno, textOpcionais, textCertificacoes);
+    const analysisResult = await analyzeWithLLM(
+      textAluno,
+      textOpcionais,
+      textCertificacoes,
+    );
 
     // Salvar no banco de dados
     const report = await prisma.report.create({
@@ -74,12 +80,34 @@ async function analyzeHandler(req, res) {
   }
 }
 
+async function getUserIdByToken(token) {
+  console.log("Requisição chegou em parseToken");
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    return decoded.id;
+  } catch (error) {
+    console.error("Erro ao decodificar o token:", error);
+    throw new Error("Token inválido");
+  }
+}
+
 /**
  * Handler para listar todos os reports.
  */
 async function listReportsHandler(req, res) {
+  console.log("Requisição chegou na listagem por usuário");
   try {
+    const authHeader = req.headers.authorization;
+    const token = authHeader.split(" ")[1];
+
+    if (!token) return res.status(401).json({ error: "Token não fornecido." });
+
+    const userId = await getUserIdByToken(token);
+
     const reports = await prisma.report.findMany({
+      where: {
+        generatorId: userId,
+      },
       orderBy: {
         createdAt: "desc", // Mais recentes primeiro
       },
@@ -111,7 +139,7 @@ async function listReportsHandler(req, res) {
             }
           : null,
         // Não incluir o content completo na listagem para economizar banda
-        contentPreview: report.content
+        contentPreview: report.content,
       })),
       total: reports.length,
     });
@@ -128,7 +156,7 @@ async function listReportsHandler(req, res) {
  */
 async function getReportByIdHandler(req, res) {
   console.log("estamos chegando aq no id");
-  
+
   try {
     const { id } = req.params;
 
@@ -164,7 +192,6 @@ async function getReportByIdHandler(req, res) {
   }
 }
 
-
 async function deleteReportByIdHandler(req, res) {
   try {
     const { id } = req.params;
@@ -195,7 +222,6 @@ async function deleteReportByIdHandler(req, res) {
       message: "Report deletado com sucesso.",
       deletedId: id,
     });
-
   } catch (error) {
     console.error("Erro ao deletar report:", error);
     return res.status(500).json({
@@ -204,6 +230,9 @@ async function deleteReportByIdHandler(req, res) {
   }
 }
 
-
-export { analyzeHandler, deleteReportByIdHandler, getReportByIdHandler, listReportsHandler };
-
+export {
+  analyzeHandler,
+  deleteReportByIdHandler,
+  getReportByIdHandler,
+  listReportsHandler,
+};

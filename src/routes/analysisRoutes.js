@@ -28,7 +28,6 @@ router.get("/reports", authenticateToken, listReportsHandler);
 // Rota para buscar um report por ID
 router.get("/reports/:id", authenticateToken, getReportByIdHandler);
 
-router.delete("/reports/:id", authenticateToken, deleteReportByIdHandler)
+router.delete("/reports/:id", authenticateToken, deleteReportByIdHandler);
 
 export { router };
-
