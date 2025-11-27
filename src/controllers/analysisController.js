@@ -111,7 +111,7 @@ async function listReportsHandler(req, res) {
             }
           : null,
         // Não incluir o content completo na listagem para economizar banda
-        contentPreview: report.content.substring(0, 200) + "...",
+        contentPreview: report.content
       })),
       total: reports.length,
     });
@@ -127,6 +127,8 @@ async function listReportsHandler(req, res) {
  * Handler para buscar um report por ID.
  */
 async function getReportByIdHandler(req, res) {
+  console.log("estamos chegando aq no id");
+  
   try {
     const { id } = req.params;
 
@@ -162,5 +164,46 @@ async function getReportByIdHandler(req, res) {
   }
 }
 
-export { analyzeHandler, getReportByIdHandler, listReportsHandler };
+
+async function deleteReportByIdHandler(req, res) {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({
+        error: "ID do relatório não foi fornecido.",
+      });
+    }
+
+    // Verifica se o report existe
+    const existing = await prisma.report.findUnique({
+      where: { id },
+    });
+
+    if (!existing) {
+      return res.status(404).json({
+        error: "Report não encontrado.",
+      });
+    }
+
+    // Deleta
+    await prisma.report.delete({
+      where: { id },
+    });
+
+    return res.json({
+      message: "Report deletado com sucesso.",
+      deletedId: id,
+    });
+
+  } catch (error) {
+    console.error("Erro ao deletar report:", error);
+    return res.status(500).json({
+      error: error.message || "Erro interno ao deletar o report.",
+    });
+  }
+}
+
+
+export { analyzeHandler, deleteReportByIdHandler, getReportByIdHandler, listReportsHandler };
 

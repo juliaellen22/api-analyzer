@@ -2,6 +2,7 @@ import express from "express";
 import { upload } from "../config/multer.js";
 import {
   analyzeHandler,
+  deleteReportByIdHandler,
   getReportByIdHandler,
   listReportsHandler,
 } from "../controllers/analysisController.js";
@@ -26,6 +27,8 @@ router.get("/reports", authenticateToken, listReportsHandler);
 
 // Rota para buscar um report por ID
 router.get("/reports/:id", authenticateToken, getReportByIdHandler);
+
+router.delete("/reports/:id", authenticateToken, deleteReportByIdHandler)
 
 export { router };
 

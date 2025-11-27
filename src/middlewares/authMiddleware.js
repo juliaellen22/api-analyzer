@@ -14,7 +14,9 @@ export function authenticateToken(req, res, next) {
     return next();
   }
 
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+  const secret = process.env.JWT_SECRET || "default-secret-key";
+  
+  jwt.verify(token, secret, (err, user) => {
     if (err) {
       // Token inválido, mas permite continuar sem autenticação
       req.user = null;
