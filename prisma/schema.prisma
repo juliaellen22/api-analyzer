@@ -9,33 +9,27 @@ datasource db {
 }
 
 model User {
-  id       String @id @default(uuid())
-  email    String @unique
+  id       String   @id @default(uuid())
+  email    String   @unique
   password String
   name     String
-  chats    Chat[]
+  reports  Report[]
 
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-model Chat {
-  id       String    @id @default(uuid())
-  user     User      @relation(fields: [userId], references: [id])
-  userId   String
-  messages Message[]
-
-  // Timestamps
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model Message {
+model Report {
   id      String @id @default(uuid())
-  chat    Chat   @relation(fields: [chatId], references: [id])
-  chatId  String
   content String
+  generatorId String?
+  generator    User?   @relation(fields: [generatorId], references: [id])
+
+  studentName          String
+  studentActualCourse  String
+  studentTargetCourse String
+  registration         String
 
   // Timestamps
   createdAt DateTime @default(now())
